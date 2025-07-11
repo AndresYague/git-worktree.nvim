@@ -11,7 +11,7 @@ local current_worktree_path = nil
 local on_change_callbacks = {}
 
 M.setup_git_info = function()
-    local cwd = vim.loop.cwd()
+    local cwd = vim.uv.cwd()
 
     local is_in_worktree = false
 
@@ -458,7 +458,7 @@ M.delete_worktree = function(path, force, opts)
                 opts.on_failure(e)
             end
 
-            failure(cmd, vim.loop.cwd())(e)
+            failure(cmd, vim.uv.cwd())(e)
         end)
         delete:start()
     end)
@@ -477,7 +477,7 @@ M.update_current_buffer = function(prev_path)
         return false
     end
 
-    local cwd = vim.loop.cwd()
+    local cwd = vim.uv.cwd()
     local current_buf_name = vim.api.nvim_buf_get_name(0)
     if not current_buf_name or current_buf_name == "" then
         return false
