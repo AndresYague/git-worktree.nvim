@@ -150,14 +150,13 @@ local function change_dirs(path)
 
     local previous_worktree = current_worktree_path
 
-    -- vim.loop.chdir(worktree_path)
     if Path:new(worktree_path):exists() then
         local cmd = string.format("%s %s", M._config.change_directory_command, worktree_path)
         status:log().debug("Changing to directory " .. worktree_path)
         vim.cmd(cmd)
         current_worktree_path = worktree_path
     else
-        status:error('Could not chang to directory: ' ..worktree_path)
+        status:error('Could not change to directory: ' ..worktree_path)
     end
 
     if M._config.clearjumps_on_change then
