@@ -75,6 +75,13 @@ local delete_worktree = function(prompt_bufnr)
 
   local worktree_path = get_worktree_path(prompt_bufnr)
   actions.close(prompt_bufnr)
+
+  -- If removing current worktree, switch to root first
+  local current_worktree_path = git_worktree.get_current_worktree_path()
+  if current_worktree_path == worktree_path then
+    git_worktree.switch_worktree(git_worktree.get_root())
+  end
+
   if worktree_path ~= nil then
     git_worktree.delete_worktree(worktree_path, force_next_deletion, {
       on_failure = delete_failure_handler,
@@ -84,26 +91,6 @@ local delete_worktree = function(prompt_bufnr)
 end
 
 local create_input_prompt = function(cb)
-  --[[
-    local window = Window.centered({
-        width = 30,
-        height = 1
-    })
-    vim.api.nvim_buf_set_option(window.bufnr, "buftype", "prompt")
-    vim.fn.prompt_setprompt(window.bufnr, "Worktree Location: ")
-    vim.fn.prompt_setcallback(window.bufnr, function(text)
-        vim.api.nvim_win_close(window.win_id, true)
-        vim.api.nvim_buf_delete(window.bufnr, {force = true})
-        cb(text)
-    end)
-
-    vim.api.nvim_set_current_win(window.win_id)
-    vim.fn.schedule(function()
-        vim.nvim_command("startinsert")
-    end)
-    --]]
-  --
-
   local subtree = vim.fn.input("Path to subtree > ")
   cb(subtree)
 end
