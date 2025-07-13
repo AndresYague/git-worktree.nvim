@@ -16,9 +16,8 @@ M.setup_git_info = function()
   local is_in_worktree = false
 
   local inside_worktree_job = Job:new({
-    "git",
-    "rev-parse",
-    "--is-inside-work-tree",
+    command = "git",
+    args = { "rev-parse", "--is-inside-work-tree" },
     cwd = cwd,
   })
 
@@ -29,9 +28,8 @@ M.setup_git_info = function()
   end
 
   local find_git_dir_job = Job:new({
-    "git",
-    "rev-parse",
-    "--absolute-git-dir",
+    command = "git",
+    args = { "rev-parse", "--absolute-git-dir" },
     cwd = cwd,
   })
 
@@ -71,16 +69,14 @@ M.setup_git_info = function()
   end
 
   local find_toplevel_job = Job:new({
-    "git",
-    "rev-parse",
-    "--show-toplevel",
+    command = "git",
+    args = { "rev-parse", "--show-toplevel" },
     cwd = cwd,
   })
 
   local find_toplevel_bare_job = Job:new({
-    "git",
-    "rev-parse",
-    "--is-bare-repository",
+    command = "git",
+    args = { "rev-parse", "--is-bare-repository" },
     cwd = cwd,
   })
 
@@ -97,7 +93,7 @@ M.setup_git_info = function()
 
   local stdout, code = inside_worktree_job:sync()
   if code ~= 0 then
-    status:log().error("Error in determining if we are in a worktree")
+    status:log().error("Error in determining whether we are in a worktree")
     git_worktree_root = nil
     current_worktree_path = nil
     return
@@ -235,13 +231,12 @@ end
 -- A lot of this could be cleaned up if there was better job -> job -> function
 -- communication.  That should be doable here in the near future
 local function has_worktree(path, cb)
-  local found = false
+  local found = nil
   local plenary_path = Path:new(path)
 
   local job = Job:new({
-    "git",
-    "worktree",
-    "list",
+    command = "git",
+    args = { "worktree", "list" },
     on_stdout = function(_, data)
       local list_data = {}
       for section in data:gmatch("%S+") do
@@ -300,9 +295,8 @@ end
 local function has_origin()
   local found = false
   local job = Job:new({
-    "git",
-    "remote",
-    "show",
+    command = "git",
+    args = {"remote", "show"},
     on_stdout = function(_, data)
       data = vim.trim(data)
       found = found or data == "origin"
@@ -323,8 +317,8 @@ end
 local function has_branch(branch, cb)
   local found = false
   local job = Job:new({
-    "git",
-    "branch",
+    command = "git",
+    args = {"branch"},
     on_stdout = function(_, data)
       -- remove  markere on current branch
       data = data:gsub("*", "")
@@ -355,9 +349,8 @@ local function create_worktree(path, branch, upstream, found_branch)
   end
 
   local fetch = Job:new({
-    "git",
-    "fetch",
-    "--all",
+    command = "git",
+    args = {"fetch", "--all"},
     cwd = worktree_path,
     on_start = function()
       status:next_status("git fetch --all (This may take a moment)")
@@ -394,8 +387,8 @@ local function create_worktree(path, branch, upstream, found_branch)
   })
 
   local rebase = Job:new({
-    "git",
-    "rebase",
+    command = "git",
+    args = {"rebase"},
     cwd = worktree_path,
     on_start = function()
       status:next_status("git rebase")
@@ -618,10 +611,6 @@ M.setup = function(config)
     -- should this default to true or false?
     autopush = false,
   }, config)
-end
-
-M.set_status = function(msg)
-  -- TODO: make this so #1
 end
 
 M.setup()
