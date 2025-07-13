@@ -135,6 +135,14 @@ To bring up the telescope window listing your workspaces run the following
 -- <c-f> - toggles forcing of the next deletion
 ```
 
+A window listing for worktree deletion can be brought up with
+
+```lua
+:lua require('telescope').extensions.git_worktree.delete_git_worktree()
+-- <Enter> - deletes that worktree
+-- <c-f> - toggles forcing of the next deletion
+```
+
 ### Create a worktree
 To bring up the telescope window to create a new worktree run the following
 

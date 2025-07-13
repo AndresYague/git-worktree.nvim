@@ -1,5 +1,3 @@
-local Path = require("plenary.path")
-local Window = require("plenary.window.float")
 local action_set = require("telescope.actions.set")
 local action_state = require("telescope.actions.state")
 local actions = require("telescope.actions")
@@ -12,13 +10,13 @@ local git_worktree = require("git-worktree")
 
 local force_next_deletion = false
 
-local get_worktree_path = function(prompt_bufnr)
-  local selection = action_state.get_selected_entry(prompt_bufnr)
+local get_worktree_path = function()
+  local selection = action_state.get_selected_entry()
   return selection.path
 end
 
 local switch_worktree = function(prompt_bufnr)
-  local worktree_path = get_worktree_path(prompt_bufnr)
+  local worktree_path = get_worktree_path()
   actions.close(prompt_bufnr)
   if worktree_path ~= nil then
     git_worktree.switch_worktree(worktree_path)
@@ -126,7 +124,7 @@ local create_worktree = function(opts)
   require("telescope.builtin").git_branches(opts)
 end
 
-local telescope_git_worktree = function(opts)
+local open_picker = function(opts, execute, mappings)
   opts = opts or {}
   local output = utils.get_os_command_output({ "git", "worktree", "list" })
   local results = {}
@@ -211,20 +209,11 @@ local telescope_git_worktree = function(opts)
       }),
       sorter = conf.generic_sorter(opts),
       attach_mappings = function(_, map)
-        action_set.select:replace(switch_worktree)
+        action_set.select:replace(execute)
 
-        map(
-          { "i", "n" },
-          "<C-d>",
-          delete_worktree,
-          { desc = "Delete worktree" }
-        )
-        map(
-          { "i", "n" },
-          "<C-f>",
-          toggle_forced_deletion,
-          { desc = "Force delete worktree" }
-        )
+        for _, tab in ipairs(mappings) do
+          map(tab.modes, tab.map, tab.fun, { desc = tab.desc })
+        end
 
         return true
       end,
@@ -232,10 +221,41 @@ local telescope_git_worktree = function(opts)
     :find()
 end
 
+local telescope_git_worktree = function(opts)
+  local mappings = {}
+  table.insert(mappings, {
+    modes = { "i", "n" },
+    map = "<C-d>",
+    fun = delete_worktree,
+    desc = "Delete worktree",
+  })
+  table.insert(mappings, {
+    modes = { "i", "n" },
+    map = "<C-f>",
+    fun = toggle_forced_deletion,
+    desc = "Force delete worktree",
+  })
+
+  open_picker(opts, switch_worktree, mappings)
+end
+
+local delete_git_worktree = function(opts)
+  local mappings = {}
+  table.insert(mappings, {
+    modes = { "i", "n" },
+    map = "<C-f>",
+    fun = toggle_forced_deletion,
+    desc = "Force delete worktree",
+  })
+
+  open_picker(opts, delete_worktree, mappings)
+end
+
 return require("telescope").register_extension({
   exports = {
     git_worktree = telescope_git_worktree,
     git_worktrees = telescope_git_worktree,
     create_git_worktree = create_worktree,
+    delete_git_worktree = delete_git_worktree,
   },
 })
