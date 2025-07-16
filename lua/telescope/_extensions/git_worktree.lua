@@ -71,7 +71,7 @@ local delete_worktree = function(prompt_bufnr)
     return
   end
 
-  local worktree_path = get_worktree_path(prompt_bufnr)
+  local worktree_path = get_worktree_path()
   actions.close(prompt_bufnr)
 
   -- If removing current worktree, switch to root first
@@ -170,6 +170,8 @@ local open_picker = function(opts, execute, mappings)
     end
   end
 
+  -- Make sure output is not nil
+  assert(output ~= nil)
   for _, line in ipairs(output) do
     parse_line(line)
   end

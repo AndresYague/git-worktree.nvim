@@ -91,7 +91,10 @@ M.setup_git_info = function()
     end
   end
 
-  local stdout, code = inside_worktree_job:sync()
+  local stdout -- table[string]
+  local code
+  stdout, code = inside_worktree_job:sync()
+  assert(stdout ~= nil)
   if code ~= 0 then
     status:log().error("Error in determining whether we are in a worktree")
     git_worktree_root = nil
@@ -102,6 +105,7 @@ M.setup_git_info = function()
   process_inside_worktree(stdout)
 
   stdout, code = find_git_dir_job:sync()
+  assert(stdout ~= nil)
   if code ~= 0 then
     status:log().error("Error in determining the git root dir")
     git_worktree_root = nil
@@ -111,11 +115,13 @@ M.setup_git_info = function()
   process_find_git_dir(stdout)
 
   stdout, code = find_toplevel_job:sync()
+  assert(stdout ~= nil)
   if code == 0 then
     stdout = table.concat(stdout, "")
     process_find_toplevel(stdout)
   else
     stdout, code = find_toplevel_bare_job:sync()
+    assert(stdout ~= nil)
     if code == 0 then
       stdout = table.concat(stdout, "")
       process_find_toplevel_bare(stdout)
@@ -296,7 +302,7 @@ local function has_origin()
   local found = false
   local job = Job:new({
     command = "git",
-    args = {"remote", "show"},
+    args = { "remote", "show" },
     on_stdout = function(_, data)
       data = vim.trim(data)
       found = found or data == "origin"
@@ -318,7 +324,7 @@ local function has_branch(branch, cb)
   local found = false
   local job = Job:new({
     command = "git",
-    args = {"branch"},
+    args = { "branch" },
     on_stdout = function(_, data)
       -- remove  markere on current branch
       data = data:gsub("*", "")
@@ -350,7 +356,7 @@ local function create_worktree(path, branch, upstream, found_branch)
 
   local fetch = Job:new({
     command = "git",
-    args = {"fetch", "--all"},
+    args = { "fetch", "--all" },
     cwd = worktree_path,
     on_start = function()
       status:next_status("git fetch --all (This may take a moment)")
@@ -388,7 +394,7 @@ local function create_worktree(path, branch, upstream, found_branch)
 
   local rebase = Job:new({
     command = "git",
-    args = {"rebase"},
+    args = { "rebase" },
     cwd = worktree_path,
     on_start = function()
       status:next_status("git rebase")
