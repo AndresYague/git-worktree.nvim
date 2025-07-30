@@ -62,7 +62,7 @@ local split_string = function(s, pattern, strip)
   return result
 end
 
--- Picker to get branches
+-- Picker to choose a worktree branch
 ---@param only_branches boolean?
 ---@param only_worktrees boolean?
 local get_branches = function(only_branches, only_worktrees)
@@ -84,8 +84,7 @@ local get_branches = function(only_branches, only_worktrees)
   }, { output = true })
 
   -- Trim the command_out from anything before "\r\n\n"
-  command_out =
-    string.sub(command_out, string.find(command_out, "\r\n\n") + 3)
+  command_out = string.sub(command_out, string.find(command_out, "\r\n\n") + 3)
 
   -- Split by "\n"
   local worktree_list = split_string(command_out, "\n", true)
@@ -98,7 +97,7 @@ local get_branches = function(only_branches, only_worktrees)
     worktree_table.text = wt
 
     -- Split the string
-    local split_wt = split_string(wt, '%s+')
+    local split_wt = split_string(wt, "%s+")
 
     -- Save the values
     local index = 1
@@ -127,7 +126,7 @@ local get_branches = function(only_branches, only_worktrees)
     ---@param joiner string
     ---@param start number?
     ---@return string
-    local join_string = function (s, joiner, start)
+    local join_string = function(s, joiner, start)
       local new_string = s[start]
       for i = start + 1, #s, 1 do
         new_string = new_string .. joiner .. s[i]
@@ -142,9 +141,9 @@ local get_branches = function(only_branches, only_worktrees)
     worktree_table.msg = join_wt
 
     -- Find path
-      local open = string.find(join_wt, '(', 1, true)
+    local open = string.find(join_wt, "(", 1, true)
     if open then
-      local close = string.find(join_wt, ')', 1, true)
+      local close = string.find(join_wt, ")", 1, true)
       worktree_table.path = string.sub(join_wt, open + 1, close - 1)
     end
 
@@ -157,10 +156,12 @@ local get_branches = function(only_branches, only_worktrees)
   return items
 end
 
+-- Picker to get the worktree path
 ---@param call_on_path function
+---@param title string?
 ---@param force_delete boolean?
+---@return nil
 local pick_worktree_path = function(call_on_path, title, force_delete)
-
   if title == nil then
     title = "Search"
   end
@@ -171,6 +172,8 @@ local pick_worktree_path = function(call_on_path, title, force_delete)
     format = "git_branch",
     preview = "git_log",
     title = title,
+
+    ---@class picker
     confirm = function(picker, item)
       picker:close()
       if not item.current then
@@ -187,6 +190,7 @@ local pick_worktree_path = function(call_on_path, title, force_delete)
       },
     },
     actions = {
+      ---@class picker
       git_force_deletion = function(picker)
         picker.force_delete = not picker.force_delete
         if picker.force_delete then
@@ -194,15 +198,15 @@ local pick_worktree_path = function(call_on_path, title, force_delete)
         else
           print("Force delete off")
         end
-      end
+      end,
     },
   })
 end
 
+-- Picker to request a git branch
 ---@param call_on_confirm function
 ---@param title string?
-local pick_or_find_branch = function (call_on_confirm, title)
-
+local pick_or_find_branch = function(call_on_confirm, title)
   if title == nil then
     title = "Search"
   end
@@ -228,22 +232,19 @@ local pick_or_find_branch = function (call_on_confirm, title)
 
       -- Get a path from the user
       local prompt = 'Path for branch "' .. branchname .. '": '
-      vim.ui.input({prompt = prompt}, function(input)
+      vim.ui.input({ prompt = prompt }, function(input)
         call_on_confirm(input, branchname)
       end)
-    end
+    end,
   })
 end
 
+-- TODO: Add action to change to delete worktree
 Pickers.switch_worktree_picker = function()
   pick_worktree_path(git_worktree.switch_worktree, "Switch to")
 end
 
 Pickers.delete_worktree_picker = function()
-  local delete_failure_handler = function()
-    print("Deletion failed, use <C-f> to force the next deletion")
-  end
-
   pick_worktree_path(function(path, force_delete)
     -- If removing current worktree, switch to root first
     local current_worktree_path = git_worktree.get_current_worktree_path()
@@ -252,8 +253,9 @@ Pickers.delete_worktree_picker = function()
     end
 
     git_worktree.delete_worktree(path, force_delete, {
-      on_failure = delete_failure_handler,
-      -- on_success = delete_success_handler,
+      on_failure = function()
+        print("Deletion failed, use <C-f> to force the next deletion")
+      end,
     })
   end, "Delete", false)
 end
