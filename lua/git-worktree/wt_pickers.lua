@@ -62,6 +62,7 @@ local split_string = function(s, pattern, strip)
   return result
 end
 
+-- Picker to get branches
 ---@param only_branches boolean?
 ---@param only_worktrees boolean?
 local get_branches = function(only_branches, only_worktrees)
@@ -82,9 +83,9 @@ local get_branches = function(only_branches, only_worktrees)
     mods = { silent = true },
   }, { output = true })
 
-  -- Trim the command_out
+  -- Trim the command_out from anything before "\r\n\n"
   command_out =
-    string.sub(command_out, string.find(command_out, "\r\n") + 4)
+    string.sub(command_out, string.find(command_out, "\r\n\n") + 3)
 
   -- Split by "\n"
   local worktree_list = split_string(command_out, "\n", true)
@@ -158,13 +159,18 @@ end
 
 ---@param call_on_path function
 ---@param force_delete boolean?
-local pick_worktree_path = function(call_on_path, force_delete)
+local pick_worktree_path = function(call_on_path, title, force_delete)
+
+  if title == nil then
+    title = "Search"
+  end
 
   snack_picker.pick({
     force_delete = force_delete,
     items = get_branches(false, true),
     format = "git_branch",
     preview = "git_log",
+    title = title,
     confirm = function(picker, item)
       picker:close()
       if not item.current then
@@ -193,11 +199,19 @@ local pick_worktree_path = function(call_on_path, force_delete)
   })
 end
 
-local pick_or_find_branch = function (call_on_confirm)
+---@param call_on_confirm function
+---@param title string?
+local pick_or_find_branch = function (call_on_confirm, title)
+
+  if title == nil then
+    title = "Search"
+  end
+
   snack_picker.pick({
     items = get_branches(true, false),
     format = "git_branch",
     preview = "git_log",
+    title = title,
     confirm = function(picker, item)
       picker:close()
 
@@ -213,7 +227,8 @@ local pick_or_find_branch = function (call_on_confirm)
       end
 
       -- Get a path from the user
-      vim.ui.input({prompt = "Path: "}, function(input)
+      local prompt = 'Path for branch "' .. branchname .. '": '
+      vim.ui.input({prompt = prompt}, function(input)
         call_on_confirm(input, branchname)
       end)
     end
@@ -221,7 +236,7 @@ local pick_or_find_branch = function (call_on_confirm)
 end
 
 Pickers.switch_worktree_picker = function()
-  pick_worktree_path(git_worktree.switch_worktree)
+  pick_worktree_path(git_worktree.switch_worktree, "Switch to")
 end
 
 Pickers.delete_worktree_picker = function()
@@ -240,11 +255,11 @@ Pickers.delete_worktree_picker = function()
       on_failure = delete_failure_handler,
       -- on_success = delete_success_handler,
     })
-  end, false)
+  end, "Delete", false)
 end
 
 Pickers.create_worktree_picker = function()
-  pick_or_find_branch(git_worktree.create_worktree)
+  pick_or_find_branch(git_worktree.create_worktree, "Choose or create branch")
 end
 
 return Pickers
